@@ -22,6 +22,7 @@ const CHART_DATA = [
 const FIELDS = [
   { name: "bedrooms", label: "Phòng ngủ", type: "int" },
   { name: "bathrooms", label: "Phòng tắm", type: "float" },
+<<<<<<< HEAD
   { name: "sqft_living", label: "Diện tích sống (sqft)", type: "int" },
   { name: "floors", label: "Số tầng", type: "float" },
   { name: "waterfront", label: "View mặt nước (0/1)", type: "int" },
@@ -34,6 +35,25 @@ const FIELDS = [
   { name: "lat", label: "Vĩ độ (latitude)", type: "float" },
   { name: "sqft_living15", label: "DT sống lân cận (sqft)", type: "int" },
   { name: "years", label: "Tuổi nhà (năm)", type: "int" },
+=======
+  { name: "sqft_living", label: "Diện tích sống", type: "int" },
+  { name: "sqft_lot", label: "Diện tích đất", type: "int" }, // ADD
+  { name: "floors", label: "Số tầng", type: "float" },
+  { name: "waterfront", label: "View nước (0/1)", type: "int" },
+  { name: "view", label: "View (0–4)", type: "int" },
+  { name: "condition", label: "Tình trạng (1–5)", type: "int" }, // ADD
+  { name: "grade", label: "Chất lượng", type: "int" },
+  { name: "sqft_above", label: "DT trên mặt đất", type: "int" },
+  { name: "sqft_basement", label: "DT tầng hầm", type: "int" },
+  { name: "yr_built", label: "Năm xây", type: "int" },
+  { name: "yr_renovated", label: "Năm sửa", type: "int" },
+  { name: "zipcode", label: "Zipcode", type: "int" }, // ADD
+  { name: "lat", label: "Latitude", type: "float" },
+  { name: "long", label: "Longitude", type: "float" }, // ADD
+  { name: "sqft_living15", label: "DT lân cận", type: "int" },
+  { name: "sqft_lot15", label: "DT đất lân cận", type: "int" }, // ADD
+  { name: "Years", label: "Năm bán", type: "int" }, // FIX chữ hoa
+>>>>>>> 458e1190 (create new .git and update)
 ];
 
 export default function App() {
@@ -47,6 +67,7 @@ export default function App() {
     setForm({ ...form, [e.target.name]: e.target.value });
 
   // GIẢ LẬP: Hàm xử lý dự đoán (Khi bạn bấm nút, result sẽ thay đổi)
+<<<<<<< HEAD
   const handlePredict = () => {
     setLoading(true);
     // Giả lập lấy kết quả từ backend sau 1s
@@ -58,6 +79,44 @@ export default function App() {
     }, 800);
   };
 
+=======
+  const handlePredict = async () => {
+    setLoading(true);
+
+    try {
+      const payload = {};
+
+      FIELDS.forEach((field) => {
+        payload[field.name] =
+          field.type === "int"
+            ? parseInt(form[field.name])
+            : parseFloat(form[field.name]);
+      });
+
+      const res = await fetch("http://127.0.0.1:8000/predict", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      setResult(data.predicted_price);
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi gọi API");
+    }
+
+    setLoading(false);
+  };
+  // useEffect(() => {
+  //   fetch("http://127.0.0.1:8000/history")
+  //     .then((res) => res.json())
+  //     .then((data) => console.log(data));
+  // }, []);
+>>>>>>> 458e1190 (create new .git and update)
   // 2. LOGIC QUAN TRỌNG: Tạo dữ liệu biểu đồ dựa trên 'result' hiện tại
   const dynamicChartData = CHART_DATA.map((item) => {
     const isActive = result >= item.min && result < item.max;
