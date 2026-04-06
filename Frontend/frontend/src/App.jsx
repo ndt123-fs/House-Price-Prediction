@@ -1,267 +1,173 @@
 import { useState } from "react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Cell,
-  ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis,
+  Tooltip, Cell, ResponsiveContainer,
 } from "recharts";
+import "./App.css";
 
-// 1. Cấu trúc lại CHART_DATA (Bỏ val cố định, chỉ giữ khung khoảng giá)
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
 const CHART_DATA = [
-  { range: "200$", min: 0, max: 200000 },
-  { range: "200$-400$", min: 200000, max: 400000 },
-  { range: "400$-600$", min: 400000, max: 600000 },
-  { range: "600$-800$", min: 600000, max: 800000 },
-  { range: "800$-1000$", min: 800000, max: 1000000 },
-  { range: ">1000$", min: 1000000, max: Infinity },
+  { range: "<$200K",    min: 0,       max: 200000  },
+  { range: "$200-400K", min: 200000,  max: 400000  },
+  { range: "$400-600K", min: 400000,  max: 600000  },
+  { range: "$600-800K", min: 600000,  max: 800000  },
+  { range: "$800K-1M",  min: 800000,  max: 1000000 },
+  { range: ">$1M",      min: 1000000, max: Infinity },
 ];
 
 const FIELDS = [
-  { name: "bedrooms", label: "Phòng ngủ", type: "int" },
-  { name: "bathrooms", label: "Phòng tắm", type: "float" },
-<<<<<<< HEAD
-  { name: "sqft_living", label: "Diện tích sống (sqft)", type: "int" },
-  { name: "floors", label: "Số tầng", type: "float" },
-  { name: "waterfront", label: "View mặt nước (0/1)", type: "int" },
-  { name: "view", label: "Điểm view (0–4)", type: "int" },
-  { name: "grade", label: "Chất lượng (1–13)", type: "int" },
-  { name: "sqft_above", label: "DT trên mặt đất (sqft)", type: "int" },
-  { name: "sqft_basement", label: "DT tầng hầm (sqft)", type: "int" },
-  { name: "yr_built", label: "Năm xây dựng", type: "int" },
-  { name: "yr_renovated", label: "Năm cải tạo (0 nếu chưa)", type: "int" },
-  { name: "lat", label: "Vĩ độ (latitude)", type: "float" },
-  { name: "sqft_living15", label: "DT sống lân cận (sqft)", type: "int" },
-  { name: "years", label: "Tuổi nhà (năm)", type: "int" },
-=======
-  { name: "sqft_living", label: "Diện tích sống", type: "int" },
-  { name: "sqft_lot", label: "Diện tích đất", type: "int" }, // ADD
-  { name: "floors", label: "Số tầng", type: "float" },
-  { name: "waterfront", label: "View nước (0/1)", type: "int" },
-  { name: "view", label: "View (0–4)", type: "int" },
-  { name: "condition", label: "Tình trạng (1–5)", type: "int" }, // ADD
-  { name: "grade", label: "Chất lượng", type: "int" },
-  { name: "sqft_above", label: "DT trên mặt đất", type: "int" },
-  { name: "sqft_basement", label: "DT tầng hầm", type: "int" },
-  { name: "yr_built", label: "Năm xây", type: "int" },
-  { name: "yr_renovated", label: "Năm sửa", type: "int" },
-  { name: "zipcode", label: "Zipcode", type: "int" }, // ADD
-  { name: "lat", label: "Latitude", type: "float" },
-  { name: "long", label: "Longitude", type: "float" }, // ADD
-  { name: "sqft_living15", label: "DT lân cận", type: "int" },
-  { name: "sqft_lot15", label: "DT đất lân cận", type: "int" }, // ADD
-  { name: "Years", label: "Năm bán", type: "int" }, // FIX chữ hoa
->>>>>>> 458e1190 (create new .git and update)
+  { name: "bedrooms",      label: "Phòng ngủ"                },
+  { name: "bathrooms",     label: "Phòng tắm"                },
+  { name: "sqft_living",   label: "Diện tích sống (sqft)"    },
+  { name: "floors",        label: "Số tầng"                   },
+  { name: "waterfront",    label: "View mặt nước (0/1)"      },
+  { name: "view",          label: "Điểm view (0–4)"          },
+  { name: "grade",         label: "Chất lượng (1–13)"        },
+  { name: "sqft_above",    label: "DT trên mặt đất (sqft)"   },
+  { name: "sqft_basement", label: "DT tầng hầm (sqft)"       },
+  { name: "yr_built",      label: "Năm xây dựng"             },
+  { name: "yr_renovated",  label: "Năm cải tạo (0 nếu chưa)" },
+  { name: "lat",           label: "Vĩ độ (latitude)"         },
+  { name: "sqft_living15", label: "DT sống lân cận (sqft)"   },
+  { name: "years",         label: "Tuổi nhà (năm)"           },
 ];
 
+// Các field tóm tắt hiển thị trong history card
+const SUMMARY_FIELDS = [
+  { name: "bedrooms",    label: "Phòng ngủ"  },
+  { name: "bathrooms",   label: "Phòng tắm"  },
+  { name: "sqft_living", label: "Diện tích"  },
+  { name: "grade",       label: "Chất lượng" },
+  { name: "yr_built",    label: "Năm xây"    },
+];
+
+function getAnalysis(result) {
+  if (result === null)   return "Nhập dữ liệu để xem phân tích.";
+  if (result < 300000)  return "Phân khúc bình dân, phù hợp người mua lần đầu.";
+  if (result < 600000)  return "Phân khúc trung cấp tại King County.";
+  if (result < 1000000) return "Phân khúc cao cấp tại King County.";
+  return "Phân khúc luxury — top 10% thị trường.";
+}
+
+function formatTime(date) {
+  return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
 export default function App() {
-  const [form, setForm] = useState(
-    Object.fromEntries(FIELDS.map((f) => [f.name, ""])),
-  );
-  const [result, setResult] = useState(null); // Để null ban đầu cho đến khi dự đoán
+  const [form, setForm]       = useState(Object.fromEntries(FIELDS.map((f) => [f.name, ""])));
+  const [result, setResult]   = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+  const [history, setHistory] = useState([]); // tối đa 3 mục
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  // GIẢ LẬP: Hàm xử lý dự đoán (Khi bạn bấm nút, result sẽ thay đổi)
-<<<<<<< HEAD
-  const handlePredict = () => {
-    setLoading(true);
-    // Giả lập lấy kết quả từ backend sau 1s
-    setTimeout(() => {
-      // Ví dụ: Random một số từ 100k đến 1.2tr
-      const mockPrice = Math.floor(Math.random() * 1100000) + 100000;
-      setResult(mockPrice);
-      setLoading(false);
-    }, 800);
-  };
-
-=======
   const handlePredict = async () => {
-    setLoading(true);
+    setError(null);
+
+    const emptyFields = FIELDS.filter((f) => form[f.name] === "");
+    if (emptyFields.length > 0) {
+      setError(`Vui lòng nhập đủ: ${emptyFields.map((f) => f.label).join(", ")}`);
+      return;
+    }
 
     try {
-      const payload = {};
+      setLoading(true);
+      const payload = Object.fromEntries(
+        FIELDS.map((f) => [f.name, Number(form[f.name])])
+      );
 
-      FIELDS.forEach((field) => {
-        payload[field.name] =
-          field.type === "int"
-            ? parseInt(form[field.name])
-            : parseFloat(form[field.name]);
-      });
-
-      const res = await fetch("http://127.0.0.1:8000/predict", {
+      const response = await fetch(`${API_URL}/predict`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      if (!response.ok) throw new Error(`Server lỗi: ${response.status}`);
 
-      setResult(data.predicted_price);
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      const predicted = data.predicted_price;
+      setResult(predicted);
+
+      // Thêm vào history, giữ tối đa 3 mục gần nhất
+      const newEntry = {
+        id:        Date.now(),
+        time:      formatTime(new Date()),
+        price:     predicted,
+        inputs:    { ...payload },
+      };
+      setHistory((prev) => [newEntry, ...prev].slice(0, 3));
+
     } catch (err) {
+      setError("Không thể kết nối server. Vui lòng thử lại.");
       console.error(err);
-      alert("Lỗi gọi API");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
-  // useEffect(() => {
-  //   fetch("http://127.0.0.1:8000/history")
-  //     .then((res) => res.json())
-  //     .then((data) => console.log(data));
-  // }, []);
->>>>>>> 458e1190 (create new .git and update)
-  // 2. LOGIC QUAN TRỌNG: Tạo dữ liệu biểu đồ dựa trên 'result' hiện tại
-  const dynamicChartData = CHART_DATA.map((item) => {
-    const isActive = result >= item.min && result < item.max;
-    return {
-      ...item,
-      // Nếu đúng khoảng thì cột cao lên (80), sai khoảng thì thấp xuống (5) hoặc (0)
-      val: isActive ? 80 : 5,
-    };
-  });
+
+  const chartData = CHART_DATA.map((item) => ({
+    ...item,
+    val: result !== null && result >= item.min && result < item.max ? 80 : 5,
+  }));
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        padding: "40px 20px",
-        fontFamily: "'Inter', sans-serif",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-      }}
-    >
-      <div style={{ textAlign: "center", marginBottom: 40 }}>
-        <h1
-          style={{ color: "white", fontSize: 32, margin: 0, fontWeight: 800 }}
-        >
-          🏠 Dự đoán giá nhà
-        </h1>
-      </div>
+    <div className="app">
+      {/* Header */}
+      <header className="app__header">
+        <h1 className="app__title">🏠 Dự đoán giá nhà</h1>
+        <p className="app__subtitle">King County House Price Prediction</p>
+      </header>
 
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 1100,
-          display: "flex",
-          flexDirection: "row",
-          gap: "20px",
-          alignItems: "stretch",
-          justifyContent: "center",
-        }}
-      >
-        {/* CỘT TRÁI: FORM */}
-        <div
-          style={{
-            flex: "3",
-            background: "white",
-            borderRadius: 20,
-            padding: "30px",
-            boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
-          }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "12px 20px",
-            }}
-          >
+      <div className="app__content">
+        {/* Cột trái: Form */}
+        <div className="card card--form">
+          <h3 className="form__heading">Nhập thông tin nhà</h3>
+
+          <div className="form__grid">
             {FIELDS.map(({ name, label }) => (
-              <div key={name}>
-                <label
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: "#9ca3af",
-                    textTransform: "uppercase",
-                    display: "block",
-                    marginBottom: 5,
-                    textAlign: "center",
-                  }}
-                >
-                  {label}
-                </label>
+              <div key={name} className="form__field">
+                <label className="form__label">{label}</label>
                 <input
+                  className={`form__input${error && form[name] === "" ? " form__input--error" : ""}`}
                   name={name}
                   value={form[name]}
                   onChange={handleChange}
                   type="number"
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 20,
-                    textAlign: "center",
-                    outline: "none",
-                  }}
+                  placeholder="0"
                 />
               </div>
             ))}
           </div>
 
+          {error && <p className="form__error">⚠ {error}</p>}
+
           <button
+            className="btn-predict"
             onClick={handlePredict}
-            style={{
-              marginTop: 25,
-              width: "100%",
-              padding: "14px",
-              background: "linear-gradient(135deg, #667eea, #764ba2)",
-              color: "white",
-              border: "none",
-              borderRadius: 12,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
+            disabled={loading}
           >
             {loading ? "⌛ Đang tính toán..." : "● Dự đoán giá"}
           </button>
         </div>
 
-        {/* CỘT PHẢI: RESULT */}
-        <div
-          style={{
-            flex: "2",
-            background: "white",
-            borderRadius: 20,
-            padding: "30px",
-            boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
-          <div style={{ textAlign: "center" }}>
-            <p style={{ color: "#6b7280", fontSize: 12, fontWeight: 700 }}>
-              GIÁ DỰ ĐOÁN
-            </p>
-            <h2
-              style={{
-                fontSize: 36,
-                fontWeight: 800,
-                color: "#7c3aed",
-                margin: "10px 0",
-              }}
-            >
+        {/* Cột phải: Result */}
+        <div className="card card--result">
+          <div>
+            <p className="result__label">Giá dự đoán</p>
+            <p className={`result__price ${result ? "result__price--active" : "result__price--empty"}`}>
               {result ? `$${result.toLocaleString("en-US")}` : "---"}
-            </h2>
-            <p style={{ fontSize: 11, color: "#9ca3af" }}>
-              📊 Phân khúc giá thị trường
             </p>
+            <p className="result__chart-label">📊 Phân khúc giá thị trường</p>
           </div>
 
-          <div style={{ width: "100%", height: 180 }}>
+          <div className="result__chart">
             <ResponsiveContainer width="100%" height="100%">
-              {/* SỬ DỤNG dynamicChartData THAY VÌ CHART_DATA GỐC */}
-              <BarChart data={dynamicChartData}>
+              <BarChart data={chartData} margin={{ top: 10, bottom: 0 }}>
                 <XAxis
                   dataKey="range"
                   tick={{ fontSize: 9 }}
@@ -269,14 +175,18 @@ export default function App() {
                   tickLine={false}
                 />
                 <YAxis hide domain={[0, 100]} />
+                <Tooltip
+                  formatter={() => null}
+                  labelFormatter={(label) => `Phân khúc: ${label}`}
+                  contentStyle={{ fontSize: 11 }}
+                />
                 <Bar dataKey="val" radius={[4, 4, 0, 0]}>
-                  {dynamicChartData.map((entry, index) => (
+                  {chartData.map((entry, index) => (
                     <Cell
                       key={index}
-                      // Highlight màu xám đậm cho cột active, xám nhạt cho cột còn lại
                       fill={
-                        result >= entry.min && result < entry.max
-                          ? "#d1d5db"
+                        result !== null && result >= entry.min && result < entry.max
+                          ? "#6d4aff"
                           : "#f3f4f6"
                       }
                     />
@@ -286,34 +196,52 @@ export default function App() {
             </ResponsiveContainer>
           </div>
 
-          <div
-            style={{
-              background: "#f5f3ff",
-              padding: 15,
-              borderRadius: 12,
-              textAlign: "center",
-            }}
-          >
-            <p
-              style={{
-                margin: 0,
-                fontSize: 12,
-                color: "#7c3aed",
-                fontWeight: 700,
-              }}
-            >
-              💡 Phân tích nhanh
-            </p>
-            <p style={{ margin: "5px 0 0", fontSize: 12, color: "#6b7280" }}>
-              {result
-                ? result < 500000
-                  ? "Phân khúc bình dân."
-                  : "Phân khúc cao cấp tại King County."
-                : "Nhập dữ liệu để xem phân tích."}
-            </p>
+          <div className="result__analysis">
+            <p className="result__analysis-title">💡 Phân tích nhanh</p>
+            <p className="result__analysis-text">{getAnalysis(result)}</p>
           </div>
         </div>
       </div>
+
+      {/* History section */}
+      {history.length > 0 && (
+        <div className="history">
+          <div className="history__header">
+            <h3 className="history__title">🕓 Lịch sử dự đoán</h3>
+            <span className="history__count">{history.length} / 3</span>
+          </div>
+
+          <div className="history__list">
+            {history.map((entry, index) => (
+              <div
+                key={entry.id}
+                className={`history__card ${index === 0 ? "history__card--latest" : ""}`}
+              >
+                {index === 0 && (
+                  <span className="history__badge">Mới nhất</span>
+                )}
+
+                <div className="history__price">
+                  ${entry.price.toLocaleString("en-US")}
+                </div>
+
+                <div className="history__time">🕐 {entry.time}</div>
+
+                <div className="history__divider" />
+
+                <div className="history__fields">
+                  {SUMMARY_FIELDS.map(({ name, label }) => (
+                    <div key={name} className="history__field">
+                      <span className="history__field-label">{label}</span>
+                      <span className="history__field-value">{entry.inputs[name]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
