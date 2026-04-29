@@ -73,6 +73,17 @@ export default function App() {
       return;
     }
 
+    // ✅ Thêm validate vào đây
+    const v = Object.fromEntries(FIELDS.map((f) => [f.name, Number(form[f.name])]));
+    if (v.lat < 47.1 || v.lat > 47.8)
+      return setError("Vĩ độ (lat) phải trong khoảng 47.1 – 47.8");
+    
+    if (v.grade < 1 || v.grade > 13)
+      return setError("Chất lượng phải trong khoảng 1 – 13");
+    
+    if (v.sqft_living < 290 || v.sqft_living > 13540)
+      return setError("Diện tích sống không hợp lệ (290 – 13540 sqft)");
+    
     try {
       setLoading(true);
       const payload = Object.fromEntries(

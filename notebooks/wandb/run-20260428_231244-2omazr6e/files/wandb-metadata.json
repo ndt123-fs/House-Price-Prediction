@@ -1,0 +1,17 @@
+{
+  "os":  "Windows-11-10.0.26200-SP0",
+  "python":  "CPython 3.13.3",
+  "startedAt":  "2026-04-28T16:12:44.836398Z",
+  "program":  "d:\\House-Price-Prediction\\notebooks\\notebook_1.ipynb",
+  "codePath":  "d:\\House-Price-Prediction\\notebooks\\notebook_1.ipynb",
+  "codePathLocal":  "notebook_1.ipynb",
+  "git":  {
+    "remote":  "https://github.com/ndt123-fs/House-Price-Prediction.git",
+    "commit":  "57bedd6b6d43384adacd0d43246e28f3063c163b"
+  },
+  "email":  "dp1.1a2duy@gmail.com",
+  "root":  "d:\\House-Price-Prediction\\notebooks",
+  "host":  "LAPTOP-3TT0JK6N",
+  "executable":  "d:\\House-Price-Prediction\\venv\\Scripts\\python.exe",
+  "writerId":  "vebuzx0m34k6a95sdl86vbu10do62oqi"
+}
