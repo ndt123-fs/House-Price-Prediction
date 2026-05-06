@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis,
   Tooltip, Cell, ResponsiveContainer,
@@ -61,6 +61,34 @@ export default function App() {
   const [error, setError]     = useState(null);
   const [history, setHistory] = useState([]); // tối đa 3 mục
 
+  const fetchHistory = useCallback(async () => {
+    try{
+      const res = await fetch(`${API_URL}/history`);
+      if (!res.ok) return;
+      const rows = await res.json();
+      const mapped = rows.slice(0,3).map((row) => ({
+        id:     row.id,
+        time:   formatTime(new Date(row.created_at)),
+        price:  row.predicted_price,
+        inputs: {
+          bedrooms:    row.bedrooms,
+          bathrooms:   row.bathrooms,
+          sqft_living: row.sqft_living,
+          grade:       row.grade,
+          yr_built:    row.yr_built,
+        },
+      }));
+      setHistory(mapped);
+    }catch (err){
+      console.warn("[History] Không thể tải lịch sử từ DB:", err);
+    }
+  },[]);
+
+  useEffect(() => {
+    fetchHistory();
+  },[fetchHistory]);
+
+
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -73,7 +101,7 @@ export default function App() {
       return;
     }
 
-    // ✅ Thêm validate vào đây
+    // Thêm validate vào đây
     const v = Object.fromEntries(FIELDS.map((f) => [f.name, Number(form[f.name])]));
     if (v.lat < 47.1 || v.lat > 47.8)
       return setError("Vĩ độ (lat) phải trong khoảng 47.1 – 47.8");
@@ -101,17 +129,18 @@ export default function App() {
       const data = await response.json();
       if (data.error) throw new Error(data.error);
 
-      const predicted = data.predicted_price;
-      setResult(predicted);
+      setResult(data.predicted_price);
+      
+      await fetchHistory();
 
-      // Thêm vào history, giữ tối đa 3 mục gần nhất
-      const newEntry = {
-        id:        Date.now(),
-        time:      formatTime(new Date()),
-        price:     predicted,
-        inputs:    { ...payload },
-      };
-      setHistory((prev) => [newEntry, ...prev].slice(0, 3));
+      // // Thêm vào history, giữ tối đa 3 mục gần nhất
+      // const newEntry = {
+      //   id:        Date.now(),
+      //   time:      formatTime(new Date()),
+      //   price:     predicted,
+      //   inputs:    { ...payload },
+      // };
+      // setHistory((prev) => [newEntry, ...prev].slice(0, 3));
 
     } catch (err) {
       setError("Không thể kết nối server. Vui lòng thử lại.");
